@@ -1,0 +1,14 @@
+# Record to a Windows or SMB share. Set NAS_ADDRESS, NAS_SHARE, NAS_USER and NAS_PASSWORD in
+# .env, and keep that file private, because it holds the share's password.
+services:
+  seelynx:
+    volumes:
+      - recordings:/recordings
+
+volumes:
+  recordings:
+    driver: local
+    driver_opts:
+      type: cifs
+      o: "username=${NAS_USER:?set NAS_USER in .env},password=${NAS_PASSWORD:?set NAS_PASSWORD in .env},uid=1000,gid=1000,vers=3.0"
+      device: "//${NAS_ADDRESS:?set NAS_ADDRESS in .env}/${NAS_SHARE:?set NAS_SHARE in .env}"

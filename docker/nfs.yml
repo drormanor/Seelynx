@@ -1,0 +1,13 @@
+# Record to an NFS share. Set NAS_ADDRESS and NAS_PATH in .env.
+services:
+  seelynx:
+    volumes:
+      - recordings:/recordings
+
+volumes:
+  recordings:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: "addr=${NAS_ADDRESS:?set NAS_ADDRESS in .env},rw,nfsvers=4,hard"
+      device: ":${NAS_PATH:?set NAS_PATH in .env}"

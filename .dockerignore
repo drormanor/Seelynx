@@ -1,0 +1,13 @@
+.git
+.tools
+.claude
+bin
+data
+docs
+scripts
+web/node_modules
+web/dist
+web/e2e
+*.db
+*.log
+.env

@@ -1,0 +1,37 @@
+# Seelynx on Linux or a NAS. See docs/DOCKER.md.
+#
+#   docker compose up -d --build
+#
+# To record to network storage, add one of the files in docker/:
+#
+#   docker compose -f docker-compose.yml -f docker/nfs.yml up -d --build
+
+services:
+  seelynx:
+    build:
+      context: .
+      args:
+        # The version shown in the app. Set it with
+        # SEELYNX_VERSION=$(git rev-parse --short HEAD) docker compose up -d --build
+        VERSION: ${SEELYNX_VERSION:-dev}
+    image: seelynx
+    container_name: seelynx
+    restart: unless-stopped
+    # Live video and finding ONVIF cameras both need the host's own network.
+    network_mode: host
+    command: ["-listen", ":8480", "-min-free-gb", "${SEELYNX_MIN_FREE_GB:-50}"]
+    environment:
+      TZ: ${TZ:-UTC}
+    # If a folder is missing, stop. Docker would otherwise make an empty one owned by root,
+    # and Seelynx would start without its data or fail to write.
+    volumes:
+      - type: bind
+        source: ./seelynx-data
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SEELYNX_RECORDINGS:-./seelynx-recordings}
+        target: /recordings
+        bind:
+          create_host_path: false

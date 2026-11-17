@@ -1,0 +1,19 @@
+# Local toolchain (scripts/setup-tools.ps1)
+.tools/
+
+# Runtime data: may contain camera credentials and video
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Build output
+bin/
+dist/
+node_modules/
+web/dist/
+
+# Docker runtime folders and settings, which can hold a share's password
+seelynx-data/
+seelynx-recordings/
+.env

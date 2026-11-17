@@ -1,0 +1,16 @@
+# Give Seelynx a second folder to use as a storage location, such as a NAS share the server
+# mounts. Set SEELYNX_STORAGE2 in .env to the folder on the server, then add /storage2 on
+# the Storage screen. See docs/DOCKER.md.
+#
+#   docker compose -f docker-compose.yml -f docker/storage2.yml up -d --build
+#
+# rslave lets a share that's mounted after Seelynx starts show up inside the container.
+services:
+  seelynx:
+    volumes:
+      - type: bind
+        source: ${SEELYNX_STORAGE2:?set SEELYNX_STORAGE2 in .env}
+        target: /storage2
+        bind:
+          create_host_path: false
+          propagation: rslave

@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest something Seelynx should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you need
+      description: The problem it solves, and who it's for.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+  - type: input
+    id: cameras
+    attributes:
+      label: Cameras involved
+      description: Make and model, if it depends on particular cameras.

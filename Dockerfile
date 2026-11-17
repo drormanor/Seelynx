@@ -1,6 +1,6 @@
 # Seelynx in one image. See docs/DOCKER.md.
 
-FROM node:22-slim AS web
+FROM node:26-slim AS web
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci

@@ -1,13 +1,13 @@
 # Seelynx in one image. See docs/DOCKER.md.
 
-FROM node:22-slim AS web
+FROM node:26-slim AS web
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-FROM golang:1.27.3-bookworm AS server
+FROM golang:1.27.4-bookworm AS server
 # The version shown in the app. The image has no Git history, so pass it in, such as
 # SEELYNX_VERSION=$(git rev-parse --short HEAD) docker compose up -d --build
 ARG VERSION=dev

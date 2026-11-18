@@ -1,0 +1,116 @@
+name: Release
+
+# Pushing a version tag, such as v0.1.0, builds the Windows download and the Docker image
+# and publishes them as a GitHub release:
+#
+#   git tag v0.1.0
+#   git push origin v0.1.0
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+env:
+  # Keep in step with scripts/setup-tools.ps1 and the Dockerfile.
+  MEDIAMTX_VERSION: v1.21.3
+
+jobs:
+  windows:
+    name: Windows download
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the web client
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go test ./...
+      - name: Build Seelynx
+        shell: bash
+        run: go build -trimpath -ldflags "-s -w -X seelynx/internal/api.Version=${GITHUB_REF_NAME}" -o dist/seelynx.exe ./cmd/seelynx
+
+      - name: Add MediaMTX
+        shell: bash
+        run: |
+          set -eu
+          name="mediamtx_${MEDIAMTX_VERSION}_windows_amd64.zip"
+          base="https://github.com/bluenviron/mediamtx/releases/download/${MEDIAMTX_VERSION}"
+          curl -fsSLO "$base/$name"
+          curl -fsSL "$base/checksums.sha256" | grep -F "*$name" | sha256sum -c -
+          unzip -o -q "$name" mediamtx.exe LICENSE -d mediamtx
+          cp mediamtx/mediamtx.exe dist/
+          cp mediamtx/LICENSE dist/MEDIAMTX-LICENSE.txt
+
+      - name: Package
+        shell: bash
+        run: |
+          set -eu
+          cp scripts/service.ps1 dist/
+          cp LICENSE dist/LICENSE.txt
+          cp docs/release-readme.txt dist/README.txt
+          name="seelynx-${GITHUB_REF_NAME}-windows-amd64.zip"
+          (cd dist && 7z a -tzip "../$name" . > /dev/null)
+          sha256sum "$name" > "$name.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: seelynx-*-windows-amd64.zip*
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and push to GitHub Container Registry
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          version="${GITHUB_REF_NAME#v}"
+          echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build \
+            --build-arg VERSION="$GITHUB_REF_NAME" \
+            --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
+            --label org.opencontainers.image.version="$version" \
+            --label org.opencontainers.image.licenses=AGPL-3.0-only \
+            -t "$image:$version" -t "$image:latest" .
+          docker push "$image:$version"
+          docker push "$image:latest"
+
+  release:
+    name: Publish the release
+    needs: [windows, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" seelynx-*-windows-amd64.zip* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Seelynx $GITHUB_REF_NAME" \
+            --generate-notes \
+            --prerelease

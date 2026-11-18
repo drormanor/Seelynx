@@ -14,7 +14,9 @@ services:
         # The version shown in the app. Set it with
         # SEELYNX_VERSION=$(git rev-parse --short HEAD) docker compose up -d --build
         VERSION: ${SEELYNX_VERSION:-dev}
-    image: seelynx
+    # Set SEELYNX_IMAGE=ghcr.io/drormanor/seelynx:latest in .env to use a published release
+    # instead of building. See docs/DOCKER.md.
+    image: ${SEELYNX_IMAGE:-seelynx}
     container_name: seelynx
     restart: unless-stopped
     # Live video and finding ONVIF cameras both need the host's own network.

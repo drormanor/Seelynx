@@ -3,7 +3,61 @@
 Open-source video management for IP cameras: live view, continuous recording and
 playback from a web browser, on one server. It is designed for up to 100 cameras.
 
-The project is at an early stage, so it isn't ready for production use.
+> **Early stage.** Seelynx works, but it hasn't been proven in production yet. Try it, and
+> [tell us how it went](https://github.com/drormanor/Seelynx/issues).
+
+![Live view: a grid of nine cameras](docs/images/live.jpg)
+
+<sub>Screenshots show simulated cameras.</sub>
+
+## Why Seelynx
+
+- **Light on hardware.** Video is recorded exactly as the cameras send it, never converted. In
+  testing, 64 five-megapixel cameras recording at once used under 4% of the CPU. You need disks,
+  not a graphics card.
+- **Everything in the browser.** Live view, playback, export and setup all happen in Chrome or
+  Edge. Nothing is installed on the viewing computers.
+- **Any RTSP or ONVIF camera.** No vendor lock-in. ONVIF cameras can be found automatically, and
+  their motion and analytics events can drive rules.
+- **Keeps recording when storage fails.** Cameras move to another storage location, such as a
+  local disk while a NAS is down, and move back when it returns.
+- **Alerts where you already are.** Rules send alarms with a snapshot to email, Teams, Slack,
+  Telegram, SMS, MQTT, webhooks and more.
+- **One install.** One program with a built-in database. No separate database server to run.
+
+## Quick start
+
+**Windows:** download the latest `seelynx-...-windows-amd64.zip` from
+[Releases](https://github.com/drormanor/Seelynx/releases), unzip it, open PowerShell in the folder
+and run:
+
+```powershell
+.\seelynx.exe -mediamtx .\mediamtx.exe
+```
+
+**Linux, with Docker:**
+
+```sh
+git clone https://github.com/drormanor/Seelynx.git && cd Seelynx
+mkdir -p seelynx-data seelynx-recordings && sudo chown -R 1000:1000 seelynx-data seelynx-recordings
+docker compose up -d --build
+```
+
+Then open `http://127.0.0.1:8480` (or the server's address, for Docker), create the administrator
+account, and add a camera on the **Cameras** page with **Find ONVIF cameras** or **Add camera**.
+
+To keep it running, install it as a [Windows service](docs/WINDOWS-SERVICE.md), or see
+[Running in Docker](docs/DOCKER.md) for time zones, HTTPS and network storage. Check the
+[requirements](docs/REQUIREMENTS.md) to size the server and disks.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Playback with a zoomed timeline and a range marked for export](docs/images/playback.jpg) | ![Alarms from rules, each with a snapshot](docs/images/alarms.jpg) |
+| **Playback:** zoomable timeline, slow motion or up to 8× speed, export to MP4 | **Alarms:** priorities, snapshots, notes and acknowledgement |
+| ![The Cameras page with a picture of each camera](docs/images/cameras.png) | |
+| **Cameras:** status, recording mode, retention and bitrate | |
 
 ## What it does today
 

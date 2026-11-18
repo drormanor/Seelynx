@@ -19,6 +19,20 @@ SEELYNX_VERSION=$(git rev-parse --short HEAD) docker compose up -d --build
 
 Setting `SEELYNX_VERSION` makes the version next to Help match the commit you built. Without it the app shows `Version dev`.
 
+### Or use a published release
+
+Each [release](https://github.com/drormanor/Seelynx/releases) also publishes a ready-built image,
+so the server doesn't have to build one. Follow the steps above, but instead of the last line:
+
+```sh
+echo "SEELYNX_IMAGE=ghcr.io/drormanor/seelynx:latest" >> .env
+docker compose pull
+docker compose up -d
+```
+
+To stay on one version, use its number instead of `latest`, such as `ghcr.io/drormanor/seelynx:0.1.0`.
+To upgrade, run `docker compose pull` and `docker compose up -d` again.
+
 Open `http://<server address>:8480` and create the administrator account.
 
 Set `TZ` to your time zone, because schedules and recording names use it.

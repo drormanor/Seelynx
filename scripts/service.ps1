@@ -22,11 +22,19 @@ $Name = 'Seelynx'
 $Account = "NT SERVICE\$Name"
 $InstallDir = Join-Path $env:ProgramFiles $Name
 $Repo = Split-Path $PSScriptRoot -Parent
-$Sources = @{
-    'seelynx.exe'  = Join-Path $Repo 'bin\seelynx.exe'
-    'mediamtx.exe' = Join-Path $Repo '.tools\mediamtx\mediamtx.exe'
-    'ffmpeg.exe'   = Join-Path $Repo '.tools\ffmpeg\ffmpeg.exe'
+# A release zip has the programs next to this script. A source checkout has them in bin and .tools.
+function Find-Source($file, $built) {
+    $beside = Join-Path $PSScriptRoot $file
+    if (Test-Path $beside) { return $beside }
+    return Join-Path $Repo $built
 }
+$Sources = @{
+    'seelynx.exe'  = Find-Source 'seelynx.exe' 'bin\seelynx.exe'
+    'mediamtx.exe' = Find-Source 'mediamtx.exe' '.tools\mediamtx\mediamtx.exe'
+    'ffmpeg.exe'   = Find-Source 'ffmpeg.exe' '.tools\ffmpeg\ffmpeg.exe'
+}
+# Seelynx works without ffmpeg, but snapshots are better with it.
+$Optional = @('ffmpeg.exe')
 
 function Assert-Admin {
     $me = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
@@ -39,10 +47,15 @@ function Get-Installed { Get-Service -Name $Name -ErrorAction SilentlyContinue }
 
 function Copy-Programs {
     foreach ($file in $Sources.Keys) {
-        if (-not (Test-Path $Sources[$file])) { throw "Can't find $($Sources[$file]). Build Seelynx first." }
+        if (-not (Test-Path $Sources[$file]) -and $file -notin $Optional) { throw "Can't find $($Sources[$file]). Build Seelynx first." }
     }
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-    foreach ($file in $Sources.Keys) { Copy-Item $Sources[$file] (Join-Path $InstallDir $file) -Force }
+    foreach ($file in $Sources.Keys) {
+        if (Test-Path $Sources[$file]) { Copy-Item $Sources[$file] (Join-Path $InstallDir $file) -Force }
+        elseif (-not (Test-Path (Join-Path $InstallDir $file))) {
+            Write-Host "No $file found, so snapshots come from the cameras. To add it later, put $file in $InstallDir and restart the service."
+        }
+    }
 }
 
 function Invoke-Checked {
@@ -53,11 +66,14 @@ function Invoke-Checked {
 
 function Wait-Ready {
     $port = ($Script:Url -split ':')[-1]
+    # The address it listens on: 127.0.0.1 when it listens on every address, as with :8480.
+    $hostName = ($Script:Url -replace ':[^:]*$', '').Trim('[', ']')
+    if (-not $hostName -or $hostName -eq '0.0.0.0') { $hostName = '127.0.0.1' }
     for ($i = 0; $i -lt 30; $i++) {
         $service = Get-Installed
         if ($service.Status -eq 'Stopped') { break }
-        if ((Test-NetConnection 127.0.0.1 -Port $port -WarningAction SilentlyContinue -InformationLevel Quiet)) {
-            Write-Host "Seelynx is running: http://127.0.0.1:$port"
+        if ((Test-NetConnection $hostName -Port $port -WarningAction SilentlyContinue -InformationLevel Quiet)) {
+            Write-Host "Seelynx is running: http://${hostName}:$port"
             return
         }
         Start-Sleep -Seconds 1
